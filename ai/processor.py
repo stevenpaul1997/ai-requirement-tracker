@@ -7,12 +7,34 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+ROLE_PRIORITY_MAP = {
+    "C-Suite / Executive": "High",
+    "VP / Director": "High",
+    "Department Head / Manager": "Medium",
+    "Team Lead": "Medium",
+    "End User": "Low",
+    "External Stakeholder": "Low"
+}
+
+ROLE_MOSCOW_MAP = {
+    "C-Suite / Executive": "Must Have",
+    "VP / Director": "Must Have",
+    "Department Head / Manager": "Should Have",
+    "Team Lead": "Should Have",
+    "End User": "Could Have",
+    "External Stakeholder": "Could Have"
+}
+
+
 def process_requirement(title: str, description: str, department: str, role: str, objective: str, existing_requirements: list) -> dict:
-    
+
+    priority = ROLE_PRIORITY_MAP.get(role, "Medium")
+    moscow = ROLE_MOSCOW_MAP.get(role, "Should Have")
+
     existing_text = ""
     if existing_requirements:
         existing_text = "\n".join([
-            f"- REQ-{str(r['_id'])[-6:]}: {r['title']} — {r['description'][:100]}"
+            f"- REQ-{str(r['_id'])[-6:]}: {r['title']} — {r.get('description', '')[:100]}"
             for r in existing_requirements
         ])
     else:
@@ -28,18 +50,21 @@ Department: {department}
 Submitter Role: {role}
 Business Objective: {objective}
 
+PRIORITY (already determined by role — do NOT change this): {priority}
+MOSCOW (already determined by role — do NOT change this): {moscow}
+
 EXISTING REQUIREMENTS IN SYSTEM:
 {existing_text}
 
 Your task:
 1. Generate 3 detailed user stories in "As a [user], I want to [action] so that [benefit]" format
 2. For each user story, write 2-3 acceptance criteria in "Given... When... Then..." format
-3. Classify using MoSCoW: Must Have / Should Have / Could Have / Won't Have
-4. Assign priority: High / Medium / Low with a one-sentence justification
-5. Detect any conflicts or overlaps with existing requirements. If none, say "No conflicts detected."
-6. Write a brief priority justification (1-2 sentences)
+3. Use EXACTLY this MoSCoW value (do not change it): {moscow}
+4. Use EXACTLY this priority value (do not change it): {priority}
+5. Write a one-sentence priority justification explaining why this role gets this priority
+6. Detect any conflicts or overlaps with existing requirements. If none, say "No conflicts detected."
 
-Return ONLY valid JSON in this exact format, no extra text:
+Return ONLY valid JSON in this exact format, no extra text, no markdown:
 {{
     "user_stories": [
         {{
@@ -55,13 +80,13 @@ Return ONLY valid JSON in this exact format, no extra text:
             "acceptance_criteria": "Given [context], When [action], Then [outcome]. Given [context], When [action], Then [outcome]."
         }}
     ],
-    "moscow": "Must Have",
-    "priority": "High",
-    "priority_justification": "This requirement directly impacts core business operations and blocks other workflows.",
+    "moscow": "{moscow}",
+    "priority": "{priority}",
+    "priority_justification": "One sentence explaining why a {role} submission receives {priority} priority.",
     "conflicts": [
         {{
-            "conflicting_req_id": "REQ-xxxxxx or null",
-            "description": "Description of conflict or No conflicts detected."
+            "conflicting_req_id": "null",
+            "description": "No conflicts detected."
         }}
     ]
 }}
@@ -75,24 +100,21 @@ Return ONLY valid JSON in this exact format, no extra text:
     )
 
     raw = response.choices[0].message.content.strip()
-    
-    # Clean up if model wraps in markdown
+
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
     raw = raw.strip()
 
-    return json.loads(raw)
+    parsed = json.loads(raw)
+
+    # Force priority and moscow regardless of what AI returned
+    parsed["priority"] = priority
+    parsed["moscow"] = moscow
+
+    return parsed
 
 
 def generate_priority_score(role: str, department: str, objective: str) -> str:
-    role_weights = {
-        "C-Suite / Executive": "High",
-        "VP / Director": "High",
-        "Department Head / Manager": "Medium",
-        "Team Lead": "Medium",
-        "End User": "Low",
-        "External Stakeholder": "Low"
-    }
-    return role_weights.get(role, "Medium")
+    return ROLE_PRIORITY_MAP.get(role, "Medium")

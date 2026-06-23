@@ -1,177 +1,244 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 from database.postgres_client import get_all_requirements
+
+STATUS_COLORS = {
+    "Submitted": "#0176d3", "Under Review": "#dd7a01",
+    "Approved": "#2e844a", "In Development": "#9050e9",
+    "Done": "#032d60", "Rejected": "#ba0517"
+}
+MOSCOW_COLORS = {
+    "Must Have": "#ba0517", "Should Have": "#dd7a01",
+    "Could Have": "#2e844a", "Won't Have": "#706e6b"
+}
+PRIORITY_COLORS = {"High": "#ba0517", "Medium": "#dd7a01", "Low": "#2e844a"}
+BAR_COLORS = ["#0176d3", "#2e844a", "#9050e9", "#dd7a01", "#ba0517",
+              "#032d60", "#0176d3", "#2e844a", "#9050e9", "#dd7a01"]
+
+LAYOUT = dict(
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font=dict(family="Inter, sans-serif", color="#3e3e3c", size=12),
+    margin=dict(t=20, b=60, l=20, r=20),
+    showlegend=False
+)
+
+
+def section(title):
+    st.markdown(f"""
+    <div style="font-size:0.72rem;font-weight:700;color:#0176d3;letter-spacing:1.5px;
+    text-transform:uppercase;margin:2rem 0 1rem;padding-bottom:0.5rem;
+    border-bottom:2px solid #e5e5e5;">{title}</div>
+    """, unsafe_allow_html=True)
 
 
 def render_analytics():
-    st.markdown("## 📈 Analytics Dashboard")
-    st.markdown("Real-time insights into your requirements pipeline.")
-    st.divider()
+    st.markdown("""
+    <div style="margin-bottom:2rem;">
+        <div style="font-size:0.72rem;font-weight:700;color:#0176d3;letter-spacing:1.5px;
+        text-transform:uppercase;margin-bottom:0.4rem;">Insights</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#032d60;
+        letter-spacing:-0.5px;margin-bottom:0.4rem;">Analytics Dashboard</div>
+        <div style="font-size:0.9rem;color:#706e6b;">
+        Real-time insights into your requirements pipeline.</div>
+    </div>
+    """, unsafe_allow_html=True)
 
     rows = get_all_requirements()
-
     if not rows:
-        st.info("No data yet. Submit some requirements to see analytics.")
+        st.info("No data yet.")
         return
 
     columns = ["ID", "Mongo ID", "Title", "Submitted By", "Department",
                "Role", "Status", "Priority", "MoSCoW", "Created At", "Stories"]
     df = pd.DataFrame(rows, columns=columns)
 
-    # KPI Row
     total = len(df)
     approved = len(df[df["Status"] == "Approved"])
-    high_priority = len(df[df["Priority"] == "High"])
-    must_have = len(df[df["MoSCoW"] == "Must Have"])
+    in_dev = len(df[df["Status"] == "In Development"])
+    done = len(df[df["Status"] == "Done"])
+    high = len(df[df["Priority"] == "High"])
+    must = len(df[df["MoSCoW"] == "Must Have"])
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Total Requirements", total)
-    with col2:
-        st.metric("Approved", approved)
-    with col3:
-        st.metric("High Priority", high_priority)
-    with col4:
-        st.metric("Must Have", must_have)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("Total", total)
+    c2.metric("Approved", approved)
+    c3.metric("In Development", in_dev)
+    c4.metric("Done", done)
+    c5.metric("High Priority", high)
+    c6.metric("Must Have", must)
 
     st.divider()
 
-    # Row 1 — Status + MoSCoW
+    # ── Row 1: Pie Charts ──
+    section("Distribution Overview")
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### Requirements by Status")
-        status_counts = df["Status"].value_counts().reset_index()
-        status_counts.columns = ["Status", "Count"]
-        fig_status = px.pie(
-            status_counts,
-            values="Count",
-            names="Status",
-            hole=0.4,
-            color_discrete_sequence=px.colors.qualitative.Set3
-        )
-        fig_status.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="white",
-            margin=dict(t=20, b=20, l=20, r=20)
-        )
-        st.plotly_chart(fig_status, use_container_width=True)
+        st.markdown("""<div style="font-size:0.82rem;font-weight:600;color:#032d60;margin-bottom:0.5rem;">Requirements by Status</div>""", unsafe_allow_html=True)
+        sc = df["Status"].value_counts().reset_index()
+        sc.columns = ["Status", "Count"]
+        fig1 = go.Figure(go.Pie(
+            labels=sc["Status"].tolist(),
+            values=sc["Count"].tolist(),
+            hole=0.5,
+            marker=dict(
+                colors=[STATUS_COLORS.get(s, "#706e6b") for s in sc["Status"].tolist()],
+                line=dict(color="#ffffff", width=2)
+            ),
+            textinfo="percent+label",
+            textfont=dict(size=11, family="Inter"),
+        ))
+        fig1.update_layout(**LAYOUT)
+        fig1.update_layout(height=300, margin=dict(t=10, b=10, l=10, r=10))
+        st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False})
 
     with col2:
-        st.markdown("### MoSCoW Breakdown")
-        moscow_counts = df["MoSCoW"].value_counts().reset_index()
-        moscow_counts.columns = ["MoSCoW", "Count"]
-        moscow_colors = {
-            "Must Have": "#ff4b4b",
-            "Should Have": "#ff8c00",
-            "Could Have": "#ffd700",
-            "Won't Have": "#555555"
-        }
-        colors = [moscow_colors.get(m, "#888") for m in moscow_counts["MoSCoW"]]
-        fig_moscow = px.pie(
-            moscow_counts,
-            values="Count",
-            names="MoSCoW",
-            hole=0.4,
-            color_discrete_sequence=colors
-        )
-        fig_moscow.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="white",
-            margin=dict(t=20, b=20, l=20, r=20)
-        )
-        st.plotly_chart(fig_moscow, use_container_width=True)
+        st.markdown("""<div style="font-size:0.82rem;font-weight:600;color:#032d60;margin-bottom:0.5rem;">MoSCoW Breakdown</div>""", unsafe_allow_html=True)
+        mc = df["MoSCoW"].value_counts().reset_index()
+        mc.columns = ["MoSCoW", "Count"]
+        fig2 = go.Figure(go.Pie(
+            labels=mc["MoSCoW"].tolist(),
+            values=mc["Count"].tolist(),
+            hole=0.5,
+            marker=dict(
+                colors=[MOSCOW_COLORS.get(m, "#706e6b") for m in mc["MoSCoW"].tolist()],
+                line=dict(color="#ffffff", width=2)
+            ),
+            textinfo="percent+label",
+            textfont=dict(size=11, family="Inter"),
+        ))
+        fig2.update_layout(**LAYOUT)
+        fig2.update_layout(height=300, margin=dict(t=10, b=10, l=10, r=10))
+        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
 
-    st.divider()
-
-    # Row 2 — Department + Priority
+    # ── Row 2: Bar Charts ──
+    section("Submission Breakdown")
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### Requirements by Department")
-        dept_counts = df["Department"].value_counts().reset_index()
-        dept_counts.columns = ["Department", "Count"]
-        fig_dept = px.bar(
-            dept_counts,
-            x="Count",
-            y="Department",
-            orientation="h",
-            color="Count",
-            color_continuous_scale="Blues"
+        st.markdown("""<div style="font-size:0.82rem;font-weight:600;color:#032d60;margin-bottom:0.5rem;">By Department</div>""", unsafe_allow_html=True)
+        dc = df["Department"].value_counts().reset_index()
+        dc.columns = ["Department", "Count"]
+        depts = dc["Department"].tolist()
+        counts = dc["Count"].tolist()
+        n = len(depts)
+        colors = BAR_COLORS[:n]
+        fig3 = go.Figure()
+        for i, (dept, count, color) in enumerate(zip(depts, counts, colors)):
+            fig3.add_trace(go.Bar(
+                x=[count],
+                y=[dept],
+                orientation="h",
+                marker=dict(color=color, line=dict(color="#ffffff", width=1)),
+                text=[str(count)],
+                textposition="inside",
+                textfont=dict(size=12, color="#ffffff", family="Inter", weight=700),
+                name=dept,
+                showlegend=False
+            ))
+        fig3.update_layout(**LAYOUT)
+        fig3.update_layout(
+            height=max(320, n * 44),
+            barmode="stack",
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False,
+                      range=[0, max(counts) + 0.5]),
+            yaxis=dict(showgrid=False, autorange="reversed",
+                      tickfont=dict(size=12, color="#032d60", family="Inter")),
+            margin=dict(t=10, b=10, l=120, r=40),
+            bargap=0.2
         )
-        fig_dept.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="white",
-            margin=dict(t=20, b=20, l=20, r=20),
-            coloraxis_showscale=False
-        )
-        st.plotly_chart(fig_dept, use_container_width=True)
+        st.plotly_chart(fig3, use_container_width=True, config={"displayModeBar": False})
 
     with col2:
-        st.markdown("### Requirements by Priority")
-        priority_counts = df["Priority"].value_counts().reset_index()
-        priority_counts.columns = ["Priority", "Count"]
-        priority_colors = {"High": "#ff4b4b", "Medium": "#ffd700", "Low": "#00cc44"}
-        fig_priority = px.bar(
-            priority_counts,
-            x="Priority",
-            y="Count",
-            color="Priority",
-            color_discrete_map=priority_colors
+        st.markdown("""<div style="font-size:0.82rem;font-weight:600;color:#032d60;margin-bottom:0.5rem;">By Priority</div>""", unsafe_allow_html=True)
+        pc_order = ["High", "Medium", "Low"]
+        pc = df["Priority"].value_counts().reindex(pc_order).dropna().reset_index()
+        pc.columns = ["Priority", "Count"]
+        pc_labels = pc["Priority"].tolist()
+        pc_counts = pc["Count"].tolist()
+        fig4 = go.Figure()
+        for label, count in zip(pc_labels, pc_counts):
+            fig4.add_trace(go.Bar(
+                x=[label],
+                y=[count],
+                marker=dict(
+                    color=PRIORITY_COLORS.get(label, "#706e6b"),
+                    line=dict(color="#ffffff", width=1)
+                ),
+                text=[str(count)],
+                textposition="outside",
+                textfont=dict(size=13, color="#3e3e3c", family="Inter", weight=700),
+                name=label,
+                showlegend=False,
+                width=0.4
+            ))
+        fig4.update_layout(**LAYOUT)
+        fig4.update_layout(
+            height=320,
+            barmode="group",
+            xaxis=dict(showgrid=False,
+                      tickfont=dict(size=13, color="#032d60", family="Inter", weight=600)),
+            yaxis=dict(showgrid=True, gridcolor="#f3f2f2", zeroline=False,
+                      showticklabels=False, range=[0, max(pc_counts) + 3]),
+            margin=dict(t=20, b=20, l=20, r=20)
         )
-        fig_priority.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="white",
-            margin=dict(t=20, b=20, l=20, r=20),
-            showlegend=False
-        )
-        st.plotly_chart(fig_priority, use_container_width=True)
+        st.plotly_chart(fig4, use_container_width=True, config={"displayModeBar": False})
 
-    st.divider()
-
-    # Row 3 — Submissions over time
-    st.markdown("### Requirements Submitted Over Time")
+    # ── Timeline ──
+    section("Submission Timeline")
     df["Created At"] = pd.to_datetime(df["Created At"])
     df["Date"] = df["Created At"].dt.date
-    time_counts = df.groupby("Date").size().reset_index(name="Count")
-    fig_time = px.line(
-        time_counts,
-        x="Date",
-        y="Count",
-        markers=True,
-        color_discrete_sequence=["#00cc44"]
+    tc = df.groupby("Date").size().reset_index(name="Count")
+    fig5 = go.Figure()
+    fig5.add_trace(go.Scatter(
+        x=tc["Date"].tolist(),
+        y=tc["Count"].tolist(),
+        mode="lines+markers",
+        line=dict(color="#0176d3", width=2.5),
+        marker=dict(color="#0176d3", size=8, line=dict(color="#ffffff", width=2)),
+        fill="tozeroy",
+        fillcolor="rgba(1,118,211,0.07)",
+    ))
+    fig5.update_layout(**LAYOUT)
+    fig5.update_layout(
+        height=240,
+        xaxis=dict(showgrid=False, zeroline=False,
+                  tickfont=dict(size=11, color="#706e6b", family="Inter")),
+        yaxis=dict(showgrid=True, gridcolor="#f3f2f2", zeroline=False,
+                  tickfont=dict(size=11, color="#706e6b", family="Inter")),
+        margin=dict(t=10, b=40, l=40, r=20)
     )
-    fig_time.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font_color="white",
-        margin=dict(t=20, b=20, l=20, r=20)
-    )
-    st.plotly_chart(fig_time, use_container_width=True)
+    st.plotly_chart(fig5, use_container_width=True, config={"displayModeBar": False})
 
-    st.divider()
-
-    # Row 4 — Role distribution
-    st.markdown("### Submissions by Role")
-    role_counts = df["Role"].value_counts().reset_index()
-    role_counts.columns = ["Role", "Count"]
-    fig_role = px.bar(
-        role_counts,
-        x="Role",
-        y="Count",
-        color="Count",
-        color_continuous_scale="Purples"
+    # ── Role ──
+    section("Submissions by Role")
+    rc = df["Role"].value_counts().reset_index()
+    rc.columns = ["Role", "Count"]
+    rc_roles = rc["Role"].tolist()
+    rc_counts = rc["Count"].tolist()
+    fig6 = go.Figure()
+    for role, count, color in zip(rc_roles, rc_counts, BAR_COLORS[:len(rc_roles)]):
+        fig6.add_trace(go.Bar(
+            x=[role],
+            y=[count],
+            marker=dict(color=color, line=dict(color="#ffffff", width=1)),
+            text=[str(count)],
+            textposition="outside",
+            textfont=dict(size=12, color="#3e3e3c", family="Inter", weight=700),
+            name=role,
+            showlegend=False,
+            width=0.5
+        ))
+    fig6.update_layout(**LAYOUT)
+    fig6.update_layout(
+        height=320,
+        barmode="group",
+        xaxis=dict(showgrid=False, tickangle=-15,
+                  tickfont=dict(size=11, color="#032d60", family="Inter")),
+        yaxis=dict(showgrid=True, gridcolor="#f3f2f2", zeroline=False,
+                  showticklabels=False, range=[0, max(rc_counts) + 2]),
+        margin=dict(t=20, b=80, l=20, r=20)
     )
-    fig_role.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font_color="white",
-        margin=dict(t=20, b=20, l=20, r=20),
-        coloraxis_showscale=False
-    )
-    st.plotly_chart(fig_role, use_container_width=True)
+    st.plotly_chart(fig6, use_container_width=True, config={"displayModeBar": False})
