@@ -1,193 +1,190 @@
-# 📋 AI Requirement Tracker
+ReqAgent
+AI Requirements Intelligence Platform
+Take the word REQUIREMENT. Now let AI write the rest.
 
-An enterprise-grade AI-powered requirements intake system that automates the BA/BSA workflow — from stakeholder submission to structured user stories, MoSCoW classification, conflict detection, and lifecycle tracking.
+TECH STACK
+Python 3.12    Streamlit 1.58    MongoDB Atlas    Neon Postgres    Groq LLaMA 3.3 70B
 
-Built to demonstrate cross-functional readiness across Business Analyst, Business Systems Analyst, and Product Manager roles with a focus on AI Transformation.
+🧠 What This Is
+Every BA knows the feeling. A stakeholder walks in, drops a vague paragraph on your desk, and expects a Jira board by Monday.
 
----
+ReqAgent eliminates the gap between "we need a thing" and "here are 3 user stories with Given/When/Then acceptance criteria, a MoSCoW classification, a priority score, and a conflict check against every other requirement in the system."
 
-## 🚀 Live Demo
+That's not a summary. That's what happens — automatically — every time someone hits submit.
 
-> Run locally with `python -m streamlit run app.py`
+🎯 Who This Is For
 
----
+Role	Why It Matters
+Business Analyst	Requirements intake is your core job. This automates the documentation layer.
+Business Systems Analyst	Dual-database architecture (NoSQL + relational) with defensible design decisions.
+Product Manager	Pipeline visibility, MoSCoW prioritization, and analytics in one place.
+AI Transformation Lead	LLM-powered BA workflow — exactly what enterprise AI transformation looks like.
 
-## 🎯 What It Does
+⚡ What Happens When You Submit a Requirement
 
-Stakeholders submit business requirements through a form. The app:
+Stakeholder fills out a form
+        ↓
+Raw intake → MongoDB Atlas
+(unstructured, flexible, exactly as written)
+        ↓
+Groq AI — LLaMA 3.3 70B
+  ├── 3 User Stories (As a [user], I want [action] so that [benefit])
+  ├── Acceptance Criteria (Given... When... Then...)
+  ├── MoSCoW Classification
+  ├── Priority Score weighted by submitter role
+  │     C-Suite / VP → High
+  │     Manager / Team Lead → Medium
+  │     End User / External → Low
+  └── Conflict Detection against all existing requirements
+        ↓
+Structured output → Neon Postgres
+(relational, queryable, audit-ready)
+        ↓
+4-Tab Dashboard
+  Tab 1 — Submit Requirement
+  Tab 2 — Requirements Tracker (lifecycle + audit trail)
+  Tab 3 — Traceability Matrix (downloadable CSV)
+  Tab 4 — Analytics (KPIs, charts, timeline)
 
-1. **Saves raw intake to MongoDB Atlas** — unstructured, flexible, document-based
-2. **Sends it to Groq AI (LLaMA 3.3 70B)** which generates:
-   - 3 User Stories in "As a [user], I want to [action] so that [benefit]" format
-   - Acceptance Criteria in "Given... When... Then..." format
-   - MoSCoW Classification (Must Have / Should Have / Could Have / Won't Have)
-   - Priority Score (High / Medium / Low) with written justification
-   - Conflict Detection against all existing requirements
-3. **Saves structured output to Neon Postgres** — relational, queryable, audit-ready
-4. **Displays everything in a 4-tab dashboard**
+🗄️ Why Two Databases
+This is the architectural decision that makes this project interview-proof.
 
----
+MongoDB Atlas stores raw intake exactly as submitted — no schema enforcement, no data loss, no migrations. Every stakeholder describes their need differently. One submission might be 2 sentences. Another might be 10 paragraphs. MongoDB handles it.
 
-## 🏗️ Architecture
-Stakeholder Form (Streamlit)
+Neon Postgres stores the structured output after AI processing. Every requirement has exactly one MoSCoW classification, one priority, a status that changes over time, and user stories that need to be joined for traceability reporting. That's what relational databases are built for.
 
-↓
+Layer	Database	Why
+Raw intake	MongoDB Atlas	Unstructured, flexible, document-based
+User stories	Neon Postgres	Relational, queryable, join-ready
+Status audit	Neon Postgres	ACID transactions, timestamp logging
+Conflict records	Neon Postgres	Foreign key relationships
 
-MongoDB Atlas ← raw intake (unstructured)
+This pattern mirrors how enterprise systems like Salesforce, ServiceNow, and Jira handle the intake-to-workflow pipeline.
 
-↓
+🏗️ Architecture
 
-Groq AI (LLaMA 3.3 70B)
+┌─────────────────────────────────────────────┐
+│           PRESENTATION TIER                  │
+│         Streamlit Web Application            │
+│  Submit │ Tracker │ Traceability │ Analytics │
+└──────────────────┬──────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────┐
+│           BUSINESS LOGIC TIER                │
+│  Form Processor → AI Processor (Groq)        │
+│  Role Weighting → Conflict Scanner           │
+└────────┬─────────────────────────┬──────────┘
+         │                         │
+┌────────▼──────────┐  ┌───────────▼──────────┐
+│   MongoDB Atlas    │  │    Neon Postgres      │
+│   raw_intake       │  │    requirements       │
+│   Unstructured     │  │    user_stories       │
+│   Document store   │  │    status_audit       │
+└────────────────────┘  └──────────────────────┘
 
-• User Stories + Acceptance Criteria
+🛠️ Tech Stack
 
-• MoSCoW Classification
+Layer	Tool	Why
+Frontend	Streamlit 1.58	Python-native, fast to build, enterprise-ready
+AI	Groq + LLaMA 3.3 70B	Free tier, fastest inference, JSON-structured output
+NoSQL	MongoDB Atlas	Industry standard, generous free tier
+Relational	Neon Postgres	Serverless Postgres, scales to zero
+Visualization	Plotly	Interactive charts, native Streamlit integration
+Language	Python 3.12	Consistent across the full stack
 
-• Priority Scoring
+📊 Features
+•	Structured intake form with department, role, and business objective capture
+•	AI-generated user stories — 3 per requirement, full Given/When/Then
+•	MoSCoW classification — auto-assigned, hardcoded post-parse to prevent LLM override
+•	Role-weighted priority — submitter role determines priority, not content
+•	Conflict detection — scans all existing requirements on every submission
+•	Lifecycle tracker — Submitted → Under Review → Approved → In Development → Done → Rejected
+•	Status audit trail — every change logged with old status, new status, timestamp
+•	Traceability matrix — color-coded, filterable, downloadable as CSV
+•	Analytics dashboard — KPIs, donut charts, bar charts, submission timeline, role breakdown
 
-• Conflict Detection
+🔍 Design Decisions Worth Noticing
 
-↓
+Priority is role-weighted, not content-based.
+The AI cannot override priority based on how important the requirement sounds. A C-Suite submission is always High. An End User submission is always Low. This mirrors how real enterprise triage works.
 
-Neon Postgres ← structured output (relational)
+MongoDB stores the raw document, not a cleaned version.
+The entire form submission — typos, vague language, contradictions and all — is preserved exactly as written. The raw intake is the source of truth. The AI output is the interpretation.
 
-↓
+Conflict detection runs on every submission.
+Before the AI generates stories, it retrieves all existing requirement titles and descriptions and includes them in the prompt. Conflicts are surfaced immediately — not discovered in sprint planning.
 
-Dashboard
+📁 Project Structure
 
-Tab 1 — Submit Requirement
+ai-requirement-tracker/
+├── app.py                      # Main Streamlit app + UI theme
+├── requirements.txt
+├── .env.example                # Placeholder credentials only
+├── seed_data.py                # Demo data seeder
+│
+├── database/
+│   ├── mongo_client.py         # MongoDB Atlas connection + CRUD
+│   └── postgres_client.py      # Neon Postgres schema + queries
+│
+├── ai/
+│   └── processor.py            # Groq AI processing + role weighting
+│
+├── components/
+│   ├── intake_form.py          # Tab 1 — Submit Requirement
+│   ├── tracker.py              # Tab 2 — Requirements Tracker
+│   ├── traceability.py         # Tab 3 — Traceability Matrix
+│   └── analytics.py            # Tab 4 — Analytics Dashboard
+│
+└── docs/
+    ├── BRD.md                  # Business Requirements Document
+    ├── FRD.md                  # Functional Requirements Document
+    ├── use_cases.md            # 8 use cases with full flows
+    └── architecture.md         # Dual-DB rationale + data flows
 
-Tab 2 — Requirements Tracker (lifecycle)
+⚙️ Setup
 
-Tab 3 — Traceability Matrix (downloadable CSV)
-
-Tab 4 — Analytics (charts + KPIs)
-
----
-
-## 🧠 Why Two Databases
-
-| Database | Role | Why |
-|---|---|---|
-| **MongoDB Atlas** | Raw intake storage | Unstructured text varies per submission — NoSQL handles flexible schemas better |
-| **Neon Postgres** | Structured output | User stories, status, priority need relational queries, filters, and joins |
-
-This dual-database decision mirrors real enterprise architecture and demonstrates when to use NoSQL vs relational — a common interview question for BSA/BA roles.
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Tool |
-|---|---|
-| Frontend | Streamlit |
-| AI | Groq API (LLaMA 3.3 70B) |
-| NoSQL Database | MongoDB Atlas |
-| Relational Database | Neon Postgres |
-| Visualization | Plotly |
-| Language | Python 3.12 |
-
----
-
-## 📊 Features
-
-- **Requirements Intake Form** — structured submission with department, role, and objective fields
-- **AI-Generated User Stories** — 3 stories per requirement with full acceptance criteria
-- **MoSCoW Classification** — auto-assigned with AI reasoning
-- **Priority Scoring** — weighted by submitter role (C-Suite → High, End User → Low)
-- **Conflict Detection** — scans all existing requirements for overlaps
-- **Lifecycle Tracker** — Submitted → Under Review → Approved → In Development → Done
-- **Status Audit Trail** — every status change logged with timestamp
-- **Traceability Matrix** — downloadable CSV linking requirements to stories
-- **Analytics Dashboard** — KPIs, donut charts, bar charts, timeline, role breakdown
-
----
-
-## ⚙️ Setup
-
-### 1. Clone the repo
-```bash
+1. CLONE
 git clone https://github.com/stevenpaul1997/ai-requirement-tracker.git
 cd ai-requirement-tracker
-```
 
-### 2. Install dependencies
-```bash
+2. INSTALL
 pip install -r requirements.txt
-```
 
-### 3. Set up environment variables
-```bash
+3. CONFIGURE
 cp .env.example .env
-```
 
-Fill in your `.env`:
+Fill in your .env:
 GROQ_API_KEY=your_groq_api_key
-
 MONGODB_URI=your_mongodb_atlas_connection_string
-
 NEON_DATABASE_URL=your_neon_postgres_connection_string
 
-### 4. Run the app
-```bash
+4. RUN
 python -m streamlit run app.py
-```
 
----
+📖 Documentation
 
-## 📁 Project Structure
-ai-requirement-tracker/
+Document	What It Covers
+BRD	Business objectives, stakeholders, scope, risks, success metrics
+FRD	45 functional requirements mapped to business requirements
+Use Cases	8 use cases with main flows, alternative flows, pre/postconditions
+Architecture	Dual-database rationale, data flow diagrams, security decisions
 
-│
+🔒 What We Learned the Hard Way
+API keys committed to public repos get flagged by GitHub's secret scanner instantly. .env.example should contain placeholder strings only — never real credentials. .gitignore should list .env before the first commit, not after.
 
-├── app.py                      # Main Streamlit app
+These lessons are now baked into the project setup instructions.
 
-├── requirements.txt            # Python dependencies
+📌 Resume Line
 
-├── .env.example                # Environment variable template
+"Built an AI-powered requirements intake system storing unstructured stakeholder input in MongoDB Atlas and auto-generating structured user stories in Neon Postgres using LLaMA 3.3 70B — reducing documentation time by ~65%."
 
-│
+👤 Author
 
-├── database/
+Steven Saji Paul
+Graduate Student — M.S. Information Systems, CSULB
+Targeting BA / BSA / PM roles with a focus on AI Transformation
 
-│   ├── mongo_client.py         # MongoDB Atlas connection + CRUD
-
-│   └── postgres_client.py      # Neon Postgres connection + schema
-
-│
-
-├── ai/
-
-│   └── processor.py            # Groq AI processing logic
-
-│
-
-├── components/
-
-│   ├── intake_form.py          # Tab 1 — Submit Requirement
-
-│   ├── tracker.py              # Tab 2 — Requirements Tracker
-
-│   ├── traceability.py         # Tab 3 — Traceability Matrix
-
-│   └── analytics.py            # Tab 4 — Analytics Dashboard
-
-│
-
-└── docs/
-
-└── screenshots/            # App screenshots
----
-
-## 👤 Author
-
-**Steven Saji Paul**
-- 📧 stevenspaul97@gmail.com
-- 💼 [LinkedIn](https://linkedin.com/in/stevensajipaul)
-- 🌐 [Portfolio](https://stevensajipaul.github.io)
-
----
-
-## 📌 Resume Line
-
-> "Built an AI-powered requirements intake system storing unstructured stakeholder input in MongoDB Atlas and auto-generating structured user stories in Neon Postgres using LLaMA 3.3 70B — reducing documentation time by ~65%."
+•	📧 stevenspaul97@gmail.com
+•	💼 linkedin.com/in/stevensajipaul
+•	🌐 stevensajipaul.github.io
+•	💻 github.com/stevenpaul1997
