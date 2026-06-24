@@ -5,8 +5,18 @@ from datetime import datetime
 
 load_dotenv()
 
+def _get(key):
+    val = os.getenv(key)
+    if val:
+        return val
+    try:
+        import streamlit as st
+        return st.secrets.get(key, "")
+    except:
+        return ""
+
 def get_client():
-    return MongoClient(os.getenv("MONGODB_URI"))
+    return MongoClient(_get("MONGODB_URI"))
 
 def get_collection():
     client = get_client()

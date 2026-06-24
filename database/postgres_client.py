@@ -4,13 +4,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def _get(key):
+    val = os.getenv(key)
+    if val:
+        return val
+    try:
+        import streamlit as st
+        return st.secrets.get(key, "")
+    except:
+        return ""
+
 def get_connection():
-    return psycopg2.connect(os.getenv("NEON_DATABASE_URL"))
+    return psycopg2.connect(_get("NEON_DATABASE_URL"))
 
 def initialize_tables():
     conn = get_connection()
     cur = conn.cursor()
-
     cur.execute("""
         CREATE TABLE IF NOT EXISTS requirements (
             id SERIAL PRIMARY KEY,
@@ -26,7 +35,6 @@ def initialize_tables():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-
     cur.execute("""
         CREATE TABLE IF NOT EXISTS user_stories (
             id SERIAL PRIMARY KEY,
@@ -36,7 +44,6 @@ def initialize_tables():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-
     cur.execute("""
         CREATE TABLE IF NOT EXISTS status_audit (
             id SERIAL PRIMARY KEY,
@@ -46,7 +53,6 @@ def initialize_tables():
             changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-
     cur.execute("""
         CREATE TABLE IF NOT EXISTS conflicts (
             id SERIAL PRIMARY KEY,
@@ -56,7 +62,6 @@ def initialize_tables():
             detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-
     conn.commit()
     cur.close()
     conn.close()

@@ -5,7 +5,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+def _get(key):
+    val = os.getenv(key)
+    if val:
+        return val
+    try:
+        import streamlit as st
+        return st.secrets.get(key, "")
+    except:
+        return ""
 
 ROLE_PRIORITY_MAP = {
     "C-Suite / Executive": "High",
@@ -30,6 +38,8 @@ def process_requirement(title: str, description: str, department: str, role: str
 
     priority = ROLE_PRIORITY_MAP.get(role, "Medium")
     moscow = ROLE_MOSCOW_MAP.get(role, "Should Have")
+
+    client = Groq(api_key=_get("GROQ_API_KEY"))
 
     existing_text = ""
     if existing_requirements:
@@ -61,7 +71,7 @@ Your task:
 2. For each user story, write 2-3 acceptance criteria in "Given... When... Then..." format
 3. Use EXACTLY this MoSCoW value (do not change it): {moscow}
 4. Use EXACTLY this priority value (do not change it): {priority}
-5. Write a one-sentence priority justification explaining why this role gets this priority
+5. Write a one-sentence priority justification
 6. Detect any conflicts or overlaps with existing requirements. If none, say "No conflicts detected."
 
 Return ONLY valid JSON in this exact format, no extra text, no markdown:
@@ -69,15 +79,15 @@ Return ONLY valid JSON in this exact format, no extra text, no markdown:
     "user_stories": [
         {{
             "story": "As a [user], I want to [action] so that [benefit]",
-            "acceptance_criteria": "Given [context], When [action], Then [outcome]. Given [context], When [action], Then [outcome]."
+            "acceptance_criteria": "Given [context], When [action], Then [outcome]."
         }},
         {{
             "story": "As a [user], I want to [action] so that [benefit]",
-            "acceptance_criteria": "Given [context], When [action], Then [outcome]. Given [context], When [action], Then [outcome]."
+            "acceptance_criteria": "Given [context], When [action], Then [outcome]."
         }},
         {{
             "story": "As a [user], I want to [action] so that [benefit]",
-            "acceptance_criteria": "Given [context], When [action], Then [outcome]. Given [context], When [action], Then [outcome]."
+            "acceptance_criteria": "Given [context], When [action], Then [outcome]."
         }}
     ],
     "moscow": "{moscow}",
@@ -108,8 +118,6 @@ Return ONLY valid JSON in this exact format, no extra text, no markdown:
     raw = raw.strip()
 
     parsed = json.loads(raw)
-
-    # Force priority and moscow regardless of what AI returned
     parsed["priority"] = priority
     parsed["moscow"] = moscow
 
