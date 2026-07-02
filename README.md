@@ -288,4 +288,4 @@ Targeting BA / BSA / PM roles with a focus on AI Transformation
 - 📧 stevenspaul97@gmail.com
 - 💼 [linkedin.com/in/stevensajipaul](https://linkedin.com/in/stevensajipaul)
 - 🌐 [stevensajipaul.github.io](https://stevensajipaul.github.io)
-- 💻 [github.com/stevenpaul1997](https://github.com/stevenpaul1997)
+- 💻 https://ai-requirement-tracker-fmbmecjmqq9ffs57v2sr8s.streamlit.app/
