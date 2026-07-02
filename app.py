@@ -7,7 +7,7 @@ from components.analytics import render_analytics
 
 st.set_page_config(
     page_title="ReqAgent - AI Requirements Intelligence",
-    page_icon="🔷",
+    page_icon="favicon.png",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -24,6 +24,76 @@ st.markdown("""
 
     #MainMenu, footer, header, .stDeployButton,
     [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
+
+    /* FORCE ALL BUTTONS BLUE BY DEFAULT (tabs excluded - styled separately below) */
+    button:not([role="tab"]) {
+        background-color: #0176d3 !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+    button:not([role="tab"]):hover {
+        background-color: #014486 !important;
+    }
+    button:not([role="tab"]) p,
+    button:not([role="tab"]) span,
+    button:not([role="tab"]) div {
+        color: #ffffff !important;
+    }
+
+    /* PRIMARY SUBMIT BUTTON - explicit solid blue (Submit and Analyse) */
+    button[kind="primaryFormSubmit"] {
+        background-color: #0176d3 !important;
+        color: #ffffff !important;
+        border: 1px solid #0176d3 !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+    }
+    button[kind="primaryFormSubmit"]:hover {
+        background-color: #014486 !important;
+        border-color: #014486 !important;
+        color: #ffffff !important;
+    }
+    button[kind="primaryFormSubmit"]:active,
+    button[kind="primaryFormSubmit"]:focus {
+        background-color: #014486 !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+    button[kind="primaryFormSubmit"] p,
+    button[kind="primaryFormSubmit"] span,
+    button[kind="primaryFormSubmit"] div {
+        color: #ffffff !important;
+    }
+
+    /* CLEAR BUTTON EXCEPTION - white at rest */
+    button[kind="secondaryFormSubmit"] {
+        background-color: #ffffff !important;
+        color: #706e6b !important;
+        border: 1.5px solid #dddbda !important;
+    }
+    button[kind="secondaryFormSubmit"]:hover {
+        background-color: #f8f9fb !important;
+        border-color: #0176d3 !important;
+        color: #0176d3 !important;
+        box-shadow: 0 0 0 3px rgba(1,118,211,0.15) !important;
+    }
+    button[kind="secondaryFormSubmit"] p,
+    button[kind="secondaryFormSubmit"] span,
+    button[kind="secondaryFormSubmit"] div {
+        color: #706e6b !important;
+    }
+    button[kind="secondaryFormSubmit"]:hover p,
+    button[kind="secondaryFormSubmit"]:hover span,
+    button[kind="secondaryFormSubmit"]:hover div {
+        color: #0176d3 !important;
+    }
+    button[kind="secondaryFormSubmit"]:focus,
+    button[kind="secondaryFormSubmit"]:active {
+        border-color: #0176d3 !important;
+        box-shadow: 0 0 0 3px rgba(1,118,211,0.25) !important;
+        outline: none !important;
+    }
 
     .block-container {
         padding: 0 2.5rem 4rem !important;
@@ -44,10 +114,10 @@ st.markdown("""
     .sf-nav-left { display: flex; align-items: center; gap: 10px; }
     .sf-nav-icon {
         width: 34px; height: 34px;
-        background: #0176d3; border-radius: 8px;
-        color: white; font-size: 0.75rem; font-weight: 700;
         display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
     }
+    .sf-nav-icon svg { width: 100%; height: 100%; }
     .sf-nav-name { font-size: 1.05rem; font-weight: 700; color: #032d60; }
     .sf-nav-name span { color: #0176d3; }
     .sf-nav-tag {
@@ -111,38 +181,44 @@ st.markdown("""
         border-bottom: 2px solid #dddbda !important;
         border-radius: 0 !important;
         padding: 0 !important;
-        gap: 0 !important;
+        gap: 4px !important;
         box-shadow: none !important;
         margin-bottom: 2rem !important;
     }
-    .stTabs [data-baseweb="tab"] {
+    button[role="tab"] {
         background: #ffffff !important;
         color: #706e6b !important;
-        border-radius: 0 !important;
+        border-radius: 6px 6px 0 0 !important;
         padding: 14px 28px !important;
         font-family: 'Inter', sans-serif !important;
-        font-size: 0.88rem !important;
-        font-weight: 500 !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
         border: none !important;
-        border-bottom: 3px solid transparent !important;
+        border-bottom: 4px solid transparent !important;
         margin-bottom: -2px !important;
+        margin-right: 4px !important;
         transition: all 0.15s !important;
     }
-    .stTabs [data-baseweb="tab"]:hover {
+    button[role="tab"]:hover {
         color: #0176d3 !important;
-        border-bottom-color: #9fd6ff !important;
         background: #f8f9fb !important;
     }
-    .stTabs [aria-selected="true"] {
-        background: #ffffff !important;
+    button[role="tab"][aria-selected="true"] {
+        background: #eaf5fe !important;
         color: #0176d3 !important;
-        border-bottom: 3px solid #0176d3 !important;
-        font-weight: 700 !important;
+        border-bottom: 4px solid #0176d3 !important;
+        border-radius: 6px 6px 0 0 !important;
+        font-weight: 800 !important;
+    }
+    button[role="tab"] p,
+    button[role="tab"] span,
+    button[role="tab"] div {
+        color: inherit !important;
     }
     .stTabs [data-baseweb="tab-highlight"] { display: none !important; }
     .stTabs [data-baseweb="tab-border"] { display: none !important; }
 
-    /* EXPANDER - Streamlit 1.58 */
+    /* EXPANDER */
     [data-testid="stExpander"] {
         border: 1px solid #dddbda !important;
         border-radius: 6px !important;
@@ -213,50 +289,6 @@ st.markdown("""
     .stTextInput label, .stTextArea label, .stSelectbox label {
         color: #3e3e3c !important;
         font-size: 0.8rem !important;
-        font-weight: 600 !important;
-    }
-
-    /* SUBMIT */
-    .stFormSubmitButton > button {
-        background: #0176d3 !important;
-        color: #ffffff !important;
-        border: 1px solid #0176d3 !important;
-        border-radius: 4px !important;
-        padding: 0.65rem 1.5rem !important;
-        font-family: 'Inter', sans-serif !important;
-        font-size: 0.9rem !important;
-        font-weight: 600 !important;
-        width: 100% !important;
-        transition: all 0.15s !important;
-    }
-    .stFormSubmitButton > button:hover {
-        background: #014486 !important;
-        border-color: #014486 !important;
-    }
-
-    /* BUTTONS */
-    .stButton > button {
-        background: #ffffff !important;
-        color: #0176d3 !important;
-        border: 1px solid #0176d3 !important;
-        border-radius: 4px !important;
-        font-family: 'Inter', sans-serif !important;
-        font-size: 0.85rem !important;
-        font-weight: 600 !important;
-        transition: all 0.15s !important;
-    }
-    .stButton > button:hover {
-        background: #eaf5fe !important;
-        border-color: #014486 !important;
-        color: #014486 !important;
-    }
-    .stDownloadButton > button {
-        background: #ffffff !important;
-        color: #0176d3 !important;
-        border: 1px solid #0176d3 !important;
-        border-radius: 4px !important;
-        font-family: 'Inter', sans-serif !important;
-        font-size: 0.85rem !important;
         font-weight: 600 !important;
     }
 
@@ -336,7 +368,16 @@ initialize_tables()
 st.markdown("""
 <div class="sf-nav">
     <div class="sf-nav-left">
-        <div class="sf-nav-icon">RA</div>
+        <div class="sf-nav-icon">
+            <svg viewBox="0 0 77 78" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 6 H68 A9 9 0 0 1 77 15 V54 A9 9 0 0 1 68 63 H37 L23 78 V63 H9 A9 9 0 0 1 0 54 V15 A9 9 0 0 1 9 6 Z" fill="#0176d3"/>
+                <circle cx="19.5" cy="26" r="4" fill="#ffffff"/>
+                <path d="M17.5 26 L19 27.5 L22 23.5" stroke="#0176d3" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="31" y="22" width="37" height="8" rx="4" fill="#ffffff"/>
+                <circle cx="19.5" cy="44" r="4" fill="#ffffff" opacity="0.45"/>
+                <rect x="31" y="40" width="26" height="8" rx="4" fill="#ffffff" opacity="0.45"/>
+            </svg>
+        </div>
         <div class="sf-nav-name">Req<span>Agent</span></div>
         <div class="sf-nav-tag">AI Platform</div>
     </div>
@@ -381,3 +422,16 @@ with tab3:
     render_traceability()
 with tab4:
     render_analytics()
+
+st.markdown("""
+<div style="margin: 3rem -2.5rem -4rem; padding: 1.5rem 2.5rem; background: #f3f2f2; border-top: 1px solid #e5e5e5; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div style="font-size: 0.8rem; color: #706e6b;">
+        Built by <strong style="color:#032d60;">Steven Saji Paul</strong> — Business Systems Analyst
+    </div>
+    <div style="display: flex; gap: 1.25rem;">
+        <a href="https://stevenpaul1997.github.io/stevensajipaul.github.io/" target="_blank" style="font-size: 0.78rem; color: #0176d3; text-decoration: none; font-weight: 600;">Portfolio</a>
+        <a href="https://github.com/stevenpaul1997/ai-requirement-tracker" target="_blank" style="font-size: 0.78rem; color: #0176d3; text-decoration: none; font-weight: 600;">GitHub</a>
+        <a href="https://linkedin.com/in/stevensajipaul" target="_blank" style="font-size: 0.78rem; color: #0176d3; text-decoration: none; font-weight: 600;">LinkedIn</a>
+    </div>
+</div>
+""", unsafe_allow_html=True)

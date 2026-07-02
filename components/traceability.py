@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 import streamlit.components.v1 as components
 from database.postgres_client import get_all_for_traceability
 
@@ -105,20 +106,88 @@ def render_traceability():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    col1, col2 = st.columns([1, 2])
+    st.markdown("""
+    <div style="font-size:0.72rem;font-weight:700;color:#0176d3;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:0.75rem;">Export Options</div>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
+
     with col1:
         csv = df.to_csv(index=False).encode("utf-8")
         st.download_button(
-            label="Download as CSV",
+            label="📄 CSV",
             data=csv,
             file_name="traceability_matrix.csv",
             mime="text/csv",
             use_container_width=True
         )
+
     with col2:
+        try:
+            excel_buffer = io.BytesIO()
+            df.to_excel(excel_buffer, index=False, engine='openpyxl', sheet_name='Traceability Matrix')
+            excel_buffer.seek(0)
+            st.download_button(
+                label="📊 Excel",
+                data=excel_buffer,
+                file_name="traceability_matrix.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+        except Exception:
+            st.button("📊 Excel", disabled=True, use_container_width=True, help="Excel export unavailable")
+
+    with col3:
+        try:
+            from reportlab.lib.pagesizes import landscape, letter
+            from reportlab.lib.units import inch
+            from reportlab.lib.colors import HexColor, white
+            from reportlab.platypus import SimpleDocTemplate, Table as RLTable, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import ParagraphStyle
+
+            pdf_buffer = io.BytesIO()
+            doc = SimpleDocTemplate(pdf_buffer, pagesize=landscape(letter),
+                                      topMargin=0.5*inch, bottomMargin=0.5*inch,
+                                      leftMargin=0.5*inch, rightMargin=0.5*inch)
+
+            title_style = ParagraphStyle('title', fontSize=16, textColor=HexColor('#032d60'),
+                                          fontName='Helvetica-Bold', spaceAfter=10)
+            pdf_story = [Paragraph("ReqAgent — Traceability Matrix", title_style), Spacer(1, 10)]
+
+            df_clean = df.fillna("").astype(str)
+            pdf_data = [df_clean.columns.tolist()] + df_clean.values.tolist()
+            pdf_data = [[str(c)[:60] + "..." if len(str(c)) > 60 else str(c) for c in row] for row in pdf_data]
+
+            col_widths = [0.7*inch, 1.3*inch, 0.9*inch, 0.9*inch, 0.8*inch, 0.6*inch, 0.8*inch, 2.5*inch]
+            table = RLTable(pdf_data, colWidths=col_widths[:len(df.columns)], repeatRows=1)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), HexColor('#032d60')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 7),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [white, HexColor('#f3f2f2')]),
+                ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#dddbda')),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            pdf_story.append(table)
+            doc.build(pdf_story)
+            pdf_buffer.seek(0)
+
+            st.download_button(
+                label="📕 PDF",
+                data=pdf_buffer,
+                file_name="traceability_matrix.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
+        except Exception:
+            st.button("📕 PDF", disabled=True, use_container_width=True, help="PDF export unavailable")
+
+    with col4:
         st.markdown("""
-        <div style="background:#f8f9fb;border:1px solid #dddbda;border-left:3px solid #0176d3;border-radius:4px;padding:1rem;">
-            <div style="font-size:0.72rem;font-weight:700;color:#0176d3;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.3rem;">What is a Traceability Matrix?</div>
-            <div style="font-size:0.85rem;color:#3e3e3c;line-height:1.5;">Links business requirements to user stories and acceptance criteria, ensuring complete coverage and audit-ready documentation.</div>
+        <div style="background:#f8f9fb;border:1px solid #dddbda;border-left:3px solid #0176d3;border-radius:4px;padding:0.6rem 0.9rem;font-size:0.78rem;color:#3e3e3c;height:100%;display:flex;align-items:center;">
+            Export in your preferred format — CSV for spreadsheets, Excel for stakeholders, PDF for formal review.
         </div>
         """, unsafe_allow_html=True)

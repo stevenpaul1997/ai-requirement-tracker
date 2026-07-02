@@ -14,19 +14,64 @@ def render_intake_form():
     </div>
     """, unsafe_allow_html=True)
 
-    with st.form("requirement_form", clear_on_submit=True):
+    # Initialize widget-bound session state (defaults)
+    if "title_input" not in st.session_state:
+        st.session_state.title_input = ""
+    if "dept_input" not in st.session_state:
+        st.session_state.dept_input = "Sales"
+    if "name_input" not in st.session_state:
+        st.session_state.name_input = ""
+    if "role_input" not in st.session_state:
+        st.session_state.role_input = "C-Suite / Executive"
+    if "objective_input" not in st.session_state:
+        st.session_state.objective_input = ""
+    if "desc_input" not in st.session_state:
+        st.session_state.desc_input = ""
+    if "notes_input" not in st.session_state:
+        st.session_state.notes_input = ""
+    if "analysis_result" not in st.session_state:
+        st.session_state.analysis_result = None
+
+    # Handle a clear request queued from the PREVIOUS run.
+    # This must happen BEFORE the widgets below are instantiated,
+    # since Streamlit forbids modifying a widget's session_state key
+    # after that widget has already been created in the current run.
+    if st.session_state.get("_do_clear", False):
+        st.session_state.title_input = ""
+        st.session_state.dept_input = "Sales"
+        st.session_state.name_input = ""
+        st.session_state.role_input = "C-Suite / Executive"
+        st.session_state.objective_input = ""
+        st.session_state.desc_input = ""
+        st.session_state.notes_input = ""
+        st.session_state.analysis_result = None
+        st.session_state._do_clear = False
+
+    dept_options = ["Sales", "Marketing", "Operations", "Finance", "HR", "IT", "Product", "Customer Success", "Legal", "Other"]
+    role_options = ["C-Suite / Executive", "VP / Director", "Department Head / Manager", "Team Lead", "End User", "External Stakeholder"]
+
+    with st.form("requirement_form", clear_on_submit=False):
         col1, col2 = st.columns(2)
         with col1:
-            title = st.text_input("Requirement Title *", placeholder="e.g. Customer Purchase History Dashboard")
-            department = st.selectbox("Department *", ["Sales", "Marketing", "Operations", "Finance", "HR", "IT", "Product", "Customer Success", "Legal", "Other"])
-            submitted_by = st.text_input("Your Name *", placeholder="e.g. John Smith")
+            title = st.text_input("Requirement Title *", placeholder="e.g. Customer Purchase History Dashboard", key="title_input")
+            department = st.selectbox("Department *", dept_options, key="dept_input")
+            submitted_by = st.text_input("Your Name *", placeholder="e.g. John Smith", key="name_input")
         with col2:
-            role = st.selectbox("Your Role *", ["C-Suite / Executive", "VP / Director", "Department Head / Manager", "Team Lead", "End User", "External Stakeholder"])
-            business_objective = st.text_input("Business Objective *", placeholder="e.g. Improve sales rep efficiency before customer calls")
+            role = st.selectbox("Your Role *", role_options, key="role_input")
+            business_objective = st.text_input("Business Objective *", placeholder="e.g. Improve sales rep efficiency before customer calls", key="objective_input")
 
-        description = st.text_area("Requirement Description *", placeholder="Describe the business need in as much detail as possible. What problem are you solving? Who is affected? What does success look like?", height=150)
-        additional_notes = st.text_area("Additional Notes (Optional)", placeholder="Any constraints, deadlines, dependencies, or context that might be relevant.", height=80)
-        submitted = st.form_submit_button("🚀 Submit & Generate AI Analysis", use_container_width=True)
+        description = st.text_area("Requirement Description *", placeholder="Describe the business need in as much detail as possible. What problem are you solving? Who is affected? What does success look like?", height=150, key="desc_input")
+        additional_notes = st.text_area("Additional Notes (Optional)", placeholder="Any constraints, deadlines, dependencies, or context that might be relevant.", height=80, key="notes_input")
+
+        col_submit, col_clear = st.columns([3, 1])
+        with col_submit:
+            submitted = st.form_submit_button("Submit and Analyse", use_container_width=True, type="primary")
+        with col_clear:
+            cleared = st.form_submit_button("Clear", use_container_width=True, type="secondary")
+
+    if cleared:
+        st.session_state._do_clear = True
+        st.rerun()
 
     if submitted:
         if not all([title, description, submitted_by, department, role, business_objective]):
@@ -60,6 +105,12 @@ def render_intake_form():
             for conflict in result.get("conflicts", []):
                 if conflict.get("conflicting_req_id") and conflict["conflicting_req_id"] != "null":
                     insert_conflict(req_id, None, conflict["description"])
+
+        st.session_state.analysis_result = result
+
+    # Render results from session state (persists across reruns)
+    if st.session_state.analysis_result:
+        result = st.session_state.analysis_result
 
         st.success("Requirement submitted and analyzed successfully.")
         st.divider()
