@@ -1,7 +1,7 @@
 import streamlit as st
 from database.mongo_client import insert_raw_intake, get_all_titles_and_descriptions
 from database.postgres_client import insert_requirement, insert_user_stories, insert_conflict
-from ai.processor import process_requirement, generate_priority_score
+from ai.processor import process_requirement, generate_priority_score, ProcessingError
 from datetime import datetime
 
 
@@ -91,7 +91,12 @@ def render_intake_form():
         with st.spinner("🤖 AI is analyzing your requirement..."):
             existing = get_all_titles_and_descriptions()
             existing = [r for r in existing if str(r["_id"]) != mongo_id]
-            result = process_requirement(title, description, department, role, business_objective, existing)
+            try:
+                result = process_requirement(title, description, department, role, business_objective, existing)
+            except ProcessingError as e:
+                print(f"[ReqAgent] AI processing failed: {e.detail}")  # visible in Streamlit Cloud logs
+                st.error(e.user_message)
+                return
 
         with st.spinner("📊 Saving structured data to Postgres..."):
             priority = generate_priority_score(role, department, business_objective)

@@ -1,9 +1,9 @@
-streamlit
+streamlit==1.58.0
 pymongo
 psycopg2-binary
 groq
 plotly
-pandas
+pandas==2.2.3
 python-dotenv
 openpyxl
 reportlab
